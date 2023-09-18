@@ -8,8 +8,8 @@
 <channel>
 	<title>
 	Comments on: Hello world!	</title>
-	<atom:link href="https://https://yalrighty.github.io/static/hello-world/feed/" rel="self" type="application/rss+xml" />
-	<link>https://https://yalrighty.github.io/static/hello-world/</link>
+	<atom:link href="https://yalrighty.github.io/static/hello-world/feed/" rel="self" type="application/rss+xml" />
+	<link>https://yalrighty.github.io/static/hello-world/</link>
 	<description></description>
 	<lastBuildDate>Mon, 18 Sep 2023 13:51:50 +0000</lastBuildDate>
 	<sy:updatePeriod>

@@ -1,8 +1,8 @@
 @font-face {
   font-display: block;
   font-family: "bootstrap-icons";
-  src: url("https://https://yalrighty.github.io/static/wp-content/themes/flexiverse/assets/icons/bootstrap-icons/fonts/bootstrap-icons.woff2?8d200481aa7f02a2d63a331fc782cfaf") format("woff2"),
-url("https://https://yalrighty.github.io/static/wp-content/themes/flexiverse/assets/icons/bootstrap-icons/fonts/bootstrap-icons.woff?8d200481aa7f02a2d63a331fc782cfaf") format("woff");
+  src: url("https://yalrighty.github.io/static/wp-content/themes/flexiverse/assets/icons/bootstrap-icons/fonts/bootstrap-icons.woff2?8d200481aa7f02a2d63a331fc782cfaf") format("woff2"),
+url("https://yalrighty.github.io/static/wp-content/themes/flexiverse/assets/icons/bootstrap-icons/fonts/bootstrap-icons.woff?8d200481aa7f02a2d63a331fc782cfaf") format("woff");
 }
 
 .bi::before,
