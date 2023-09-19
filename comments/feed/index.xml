@@ -7,11 +7,11 @@
 	>
 <channel>
 	<title>
-	Comments on: Channel Samples	</title>
-	<atom:link href="https://yalrighty.github.io/static/sample-page/feed/" rel="self" type="application/rss+xml" />
+	Comments for Rasp TV	</title>
+	<atom:link href="https://yalrighty.github.io/static/comments/feed/" rel="self" type="application/rss+xml" />
 	<link>https://yalrighty.github.io/static/</link>
 	<description>Streaming Straight Forward</description>
-	<lastBuildDate>Tue, 19 Sep 2023 14:45:35 +0000</lastBuildDate>
+	<lastBuildDate>Tue, 19 Sep 2023 16:09:10 +0000</lastBuildDate>
 	<sy:updatePeriod>
 	hourly	</sy:updatePeriod>
 	<sy:updateFrequency>
