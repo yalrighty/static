@@ -7,11 +7,11 @@
 	>
 <channel>
 	<title>
-	Comments on: Hello world!	</title>
-	<atom:link href="https://yalrighty.github.io/static/hello-world/feed/" rel="self" type="application/rss+xml" />
-	<link>https://yalrighty.github.io/static/hello-world/</link>
-	<description></description>
-	<lastBuildDate>Mon, 18 Sep 2023 13:51:50 +0000</lastBuildDate>
+	Comments on: Channel Samples	</title>
+	<atom:link href="https://yalrighty.github.io/static/sample-page/feed/" rel="self" type="application/rss+xml" />
+	<link>https://yalrighty.github.io/static/</link>
+	<description>Streaming Straight Forward</description>
+	<lastBuildDate>Tue, 19 Sep 2023 14:45:35 +0000</lastBuildDate>
 	<sy:updatePeriod>
 	hourly	</sy:updatePeriod>
 	<sy:updateFrequency>
