@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>FFmpeg Command Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+    }
+    .command-group {
+      border: 1px solid #ccc;
+      padding: 15px;
+      margin-top: 20px;
+      position: relative;
+      background-color: #f9f9f9;
+    }
+    .remove-button {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: red;
+      color: white;
+      border: none;
+      padding: 5px 8px;
+      cursor: pointer;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 15px;
+    }
+    #result {
+      margin-top: 30px;
+      background-color: #f4f4f4;
+      padding: 15px;
+      border: 1px solid #ccc;
+      font-family: monospace;
+      white-space: pre-wrap;
+    }
+    #copyBtn {
+      margin-top: 10px;
+      padding: 8px 12px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    #copyMsg {
+      display: inline-block;
+      margin-left: 10px;
+      color: green;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>FFmpeg Command Generator</h2>
+
+  <form id="ffmpegForm">
+    <div id="commandContainer"></div>
+
+    <button type="button" onclick="addCommandGroup()">+ Add Episode</button>
+    <button type="submit">Generate Script</button>
+  </form>
+
+  <div id="result"></div>
+  <button id="copyBtn" onclick="copyToClipboard()" style="display:none;">Copy to Clipboard</button>
+  <span id="copyMsg"></span>
+
+  <script>
+    let commandCount = 0;
+
+    function createCommandGroup(id, prefill = {}) {
+      return `
+        <div class="command-group" data-id="${id}">
+          <button type="button" class="remove-button" onclick="removeCommandGroup(${id})">X</button>
+
+          <label for="url-${id}">M3U8 URL:</label>
+          <input type="text" id="url-${id}" placeholder="https://example.com/video.m3u8" required>
+
+          <label for="show-${id}">Show Name:</label>
+          <input type="text" id="show-${id}" placeholder="Example: My.Show" required value="${prefill.show || ''}">
+
+          <label for="season-${id}">Season Number:</label>
+          <input type="number" id="season-${id}" placeholder="1" min="1" required value="${prefill.season || ''}">
+
+          <label for="episode-${id}">Episode Number:</label>
+          <input type="number" id="episode-${id}" placeholder="1" min="1" required value="${prefill.episode || ''}">
+        </div>
+      `;
+    }
+
+    function addCommandGroup() {
+      const container = document.getElementById('commandContainer');
+
+      let prefill = {};
+
+      if (commandCount > 0) {
+        const prevId = commandCount - 1;
+        const prevShow = document.getElementById(`show-${prevId}`).value.trim();
+        const prevSeason = document.getElementById(`season-${prevId}`).value.trim();
+        const prevEpisode = parseInt(document.getElementById(`episode-${prevId}`).value.trim());
+
+        prefill = {
+          show: prevShow,
+          season: prevSeason,
+          episode: isNaN(prevEpisode) ? '' : prevEpisode + 1
+        };
+      }
+
+      container.insertAdjacentHTML('beforeend', createCommandGroup(commandCount, prefill));
+      commandCount++;
+
+      // ✅ Scroll to bottom after adding new group
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function removeCommandGroup(id) {
+      const group = document.querySelector(`.command-group[data-id="${id}"]`);
+      if (group) group.remove();
+    }
+
+    function copyToClipboard() {
+      const text = document.getElementById('result').innerText;
+      if (!text) return;
+
+      navigator.clipboard.writeText(text).then(() => {
+        const msg = document.getElementById('copyMsg');
+        msg.textContent = 'Copied!';
+        setTimeout(() => msg.textContent = '', 2000);
+      });
+    }
+
+    document.getElementById('ffmpegForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const commands = [];
+      const showNames = new Set();
+      const createdFolders = new Set();
+
+      for (let i = 0; i < commandCount; i++) {
+        const group = document.querySelector(`.command-group[data-id="${i}"]`);
+        if (!group) continue;
+
+        const url = document.getElementById(`url-${i}`).value.trim();
+        const show = document.getElementById(`show-${i}`).value.trim();
+        const season = parseInt(document.getElementById(`season-${i}`).value.trim());
+        const episode = parseInt(document.getElementById(`episode-${i}`).value.trim());
+
+        if (!url || !show || isNaN(season) || isNaN(episode)) continue;
+
+        showNames.add(show);
+
+        const seasonStr = season.toString().padStart(2, '0');
+        const episodeStr = episode.toString().padStart(2, '0');
+        const fileName = `S${seasonStr}E${episodeStr}.mp4`;
+        const folderPath = `/media/transmission/downloads/TV/${show}/Season ${season}`;
+        const outputPath = `${folderPath}/${fileName}`;
+
+        const folderKey = `${show}-season-${season}`;
+        let command = '';
+
+        if (!createdFolders.has(folderKey)) {
+          command += `mkdir -p "${folderPath}" && `;
+          createdFolders.add(folderKey);
+        }
+
+        command += `ffmpeg -i "${url}" -c copy -bsf:a aac_adtstoasc "${outputPath}"`;
+
+        commands.push(command);
+      }
+
+      if (commands.length === 0) {
+        document.getElementById('result').innerText = "No valid inputs provided.";
+        document.getElementById('copyBtn').style.display = "none";
+        return;
+      }
+
+      let finalCleanup = '';
+      if (showNames.size === 1) {
+        const onlyShow = Array.from(showNames)[0];
+        finalCleanup = `clear && rclone copy --progress /media/transmission/downloads/TV/${onlyShow} tgcrypt:TV/${onlyShow} --transfers 30 --disable-http2 && sudo rm -rf /media/transmission/downloads/TV/${onlyShow} && cd /home/ubuntu && exit`;
+      } else {
+        finalCleanup = `clear && rclone copy --progress /media/transmission/downloads/TV tgcrypt:TV --transfers 30 --disable-http2 && sudo rm -rf /media/transmission/downloads/TV && cd /home/ubuntu && exit`;
+      }
+
+      const fullScript = commands.join(' &&\n') + ' &&\n' + finalCleanup;
+
+      document.getElementById('result').innerText = fullScript;
+      document.getElementById('copyBtn').style.display = "inline-block";
+
+      // ✅ Scroll to bottom after generating script
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    });
+
+    // Auto-load first entry
+    addCommandGroup();
+  </script>
+
+</body>
+</html>
