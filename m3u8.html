@@ -176,7 +176,7 @@
           createdFolders.add(folderKey);
         }
 
-        command += `ffmpeg -i "${url}" -c copy -bsf:a aac_adtstoasc "${outputPath}"`;
+        command += `ffmpeg -i "${url}" -c copy "${outputPath}"`;
 
         commands.push(command);
       }
@@ -209,4 +209,5 @@
   </script>
 
 </body>
+
 </html>
