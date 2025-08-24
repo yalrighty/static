@@ -145,7 +145,7 @@
       e.preventDefault();
 
       const showNames = new Set();
-      const grouped = {}; // { folderKey: { folderPath, cmds: [] } }
+      const grouped = {}; // { folderKey: { folderPath, show, season, cmds: [] } }
 
       for (let i = 0; i < commandCount; i++) {
         const group = document.querySelector(`.command-group[data-id="${i}"]`);
@@ -188,10 +188,15 @@
 
       let finalCleanup = '';
       if (showNames.size === 1) {
-        const onlyShow = Array.from(showNames)[0];
-        finalCleanup = `clear && rclone copy --progress /media/transmission/downloads/TV/${onlyShow} tgcrypt:TV/${onlyShow} --transfers 30 --disable-http2 && sudo rm -rf /media/transmission/downloads/TV/${onlyShow} && cd /home/ubuntu && exit`;
+        // If only one show/season, cleanup just that season
+        const onlyGroup = Object.values(grouped)[0];
+        finalCleanup = `clear && rclone copy --progress "${onlyGroup.folderPath}" "tgcrypt:TV/${onlyGroup.show}/Season ${onlyGroup.season}" --transfers 30 --disable-http2 && sudo rm -rf "${onlyGroup.folderPath}" && cd /home/ubuntu && exit`;
       } else {
-        finalCleanup = `clear && rclone copy --progress /media/transmission/downloads/TV tgcrypt:TV --transfers 30 --disable-http2 && sudo rm -rf /media/transmission/downloads/TV && cd /home/ubuntu && exit`;
+        // If multiple shows/seasons, cleanup each season separately
+        const cleanupCmds = Object.values(grouped).map(g =>
+          `rclone copy --progress "${g.folderPath}" "tgcrypt:TV/${g.show}/Season ${g.season}" --transfers 30 --disable-http2 && sudo rm -rf "${g.folderPath}"`
+        );
+        finalCleanup = `clear && ${cleanupCmds.join(" && ")} && cd /home/ubuntu && exit`;
       }
 
       const fullScript = commands.join(" &&\n") + " &&\n" + finalCleanup;
