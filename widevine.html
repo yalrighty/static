@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bash Script Generator</title>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f5f5f5;
+        margin: 20px;
+    }
+
+    h2, h3 {
+        margin-top: 20px;
+    }
+
+    input, textarea, button {
+        font-size: 16px;
+        padding: 8px;
+        margin: 5px 0;
+        box-sizing: border-box;
+    }
+
+    input, textarea {
+        width: 100%;
+    }
+
+    button {
+        cursor: pointer;
+    }
+
+    .cmd-row {
+        display: flex;
+        gap: 5px;
+        margin-bottom: 8px;
+    }
+
+    .cmd-row input {
+        flex: 1;
+    }
+
+    .remove-btn {
+        background: #d9534f;
+        color: white;
+        border: none;
+        padding: 0 12px;
+    }
+
+    .remove-btn:hover {
+        background: #c9302c;
+    }
+
+    #generatedCommand {
+        height: 180px;
+        font-family: monospace;
+    }
+</style>
+</head>
+<body>
+
+<h2>Bash Script Generator for TV Shows</h2>
+
+<label>Show Name:</label>
+<input type="text" id="showName" placeholder="e.g. The Expanse">
+
+<label>Season Number:</label>
+<input type="number" id="seasonNumber" min="1" placeholder="e.g. 1">
+
+<h3>Commands</h3>
+
+<div id="cmdContainer"></div>
+
+<button onclick="addCommand()">Add Command</button>
+<button onclick="generateScript()">Generate Script</button>
+
+<h3>Generated Bash Script</h3>
+<textarea id="generatedCommand" readonly></textarea><br>
+<button onclick="copyToClipboard()">Copy to Clipboard</button>
+
+<script>
+function addCommand(value = '') {
+    const container = document.getElementById('cmdContainer');
+
+    const row = document.createElement('div');
+    row.className = 'cmd-row';
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'cmdInput';
+    input.placeholder = 'Enter command';
+    input.value = value;
+
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = '✖';
+    removeBtn.className = 'remove-btn';
+    removeBtn.onclick = () => row.remove();
+
+    row.appendChild(input);
+    row.appendChild(removeBtn);
+    container.appendChild(row);
+}
+
+// Add one command box by default
+addCommand();
+
+function generateScript() {
+    const showName = document.getElementById('showName').value.trim();
+    const seasonNumber = document.getElementById('seasonNumber').value.trim();
+
+    if (!showName || !seasonNumber) {
+        alert('Please enter Show Name and Season Number.');
+        return;
+    }
+
+    const cmdInputs = document.querySelectorAll('.cmdInput');
+    const cmds = [];
+
+    cmdInputs.forEach(input => {
+        const val = input.value.trim();
+        if (val) cmds.push(val);
+    });
+
+    const basePath = `/media/transmission/downloads/TV/${showName}/Season ${seasonNumber}`;
+
+    let command = `mkdir -p "${basePath}" && `;
+    command += `cd "${basePath}"`;
+
+    if (cmds.length) {
+        command += ' && ' + cmds.join(' && ');
+    }
+
+    command += ` && season=$(basename "$PWD" | grep -o '[0-9]\\+')`;
+    command += `; season=$(printf "%02d" "$season"); `;
+    command += `i=1; for f in $(ls -1 | sort); do `;
+    command += `[ -f "$f" ] || continue; `;
+    command += `ext="\${f##*.}"; `;
+    command += `mv -i "$f" "$(printf "S%sE%02d.%s" "$season" "$i" "$ext")"; `;
+    command += `i=$((i+1)); done`;
+
+    command += ` && clear && rclone copy --progress `;
+    command += `"${basePath}" `;
+    command += `"tgcrypt:TV/${showName}/Season ${seasonNumber}" `;
+    command += `--transfers 30 --disable-http2`;
+
+    command += ` && sudo rm -rf "${basePath}" && exit`;
+
+    document.getElementById('generatedCommand').value = command;
+}
+
+function copyToClipboard() {
+    const textarea = document.getElementById('generatedCommand');
+    textarea.select();
+    textarea.setSelectionRange(0, 99999);
+    document.execCommand('copy');
+    alert('Command copied to clipboard!');
+}
+</script>
+
+</body>
+</html>
