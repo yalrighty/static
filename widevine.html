@@ -95,6 +95,19 @@ function renumberCommands() {
     });
 }
 
+async function pasteFromClipboardIfEmpty(input) {
+    if (input.value.trim() !== '') return;
+
+    try {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+            input.value = text.trim();
+        }
+    } catch (err) {
+        console.warn('Clipboard access denied');
+    }
+}
+
 function addCommand(value = '') {
     const container = document.getElementById('cmdContainer');
 
@@ -107,8 +120,10 @@ function addCommand(value = '') {
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'cmdInput';
-    input.placeholder = 'Enter command';
+    input.placeholder = 'Click to paste from clipboard';
     input.value = value;
+
+    input.addEventListener('click', () => pasteFromClipboardIfEmpty(input));
 
     const removeBtn = document.createElement('button');
     removeBtn.textContent = '✖';
@@ -125,7 +140,6 @@ function addCommand(value = '') {
 
     renumberCommands();
 
-    // 👇 Auto-scroll to the newly added command
     row.scrollIntoView({ behavior: 'smooth', block: 'center' });
     input.focus();
 }
@@ -142,18 +156,13 @@ function generateScript() {
         return;
     }
 
-    const cmdInputs = document.querySelectorAll('.cmdInput');
-    const cmds = [];
-
-    cmdInputs.forEach(input => {
-        const val = input.value.trim();
-        if (val) cmds.push(val);
-    });
+    const cmds = Array.from(document.querySelectorAll('.cmdInput'))
+        .map(i => i.value.trim())
+        .filter(Boolean);
 
     const basePath = `/media/transmission/downloads/TV/${showName}/Season ${seasonNumber}`;
 
-    let command = `mkdir -p "${basePath}" && `;
-    command += `cd "${basePath}"`;
+    let command = `mkdir -p "${basePath}" && cd "${basePath}"`;
 
     if (cmds.length) {
         command += ' && ' + cmds.join(' && ');
@@ -176,15 +185,12 @@ function generateScript() {
 
     const output = document.getElementById('generatedCommand');
     output.value = command;
-
-    // 👇 Auto-scroll to the generated output
     output.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function copyToClipboard() {
     const textarea = document.getElementById('generatedCommand');
     textarea.select();
-    textarea.setSelectionRange(0, 99999);
     document.execCommand('copy');
     alert('Command copied to clipboard!');
 }
