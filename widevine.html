@@ -33,8 +33,17 @@
 
     .cmd-row {
         display: flex;
-        gap: 5px;
+        gap: 8px;
         margin-bottom: 8px;
+        align-items: center;
+    }
+
+    .cmd-number {
+        width: 32px;
+        text-align: right;
+        font-weight: bold;
+        color: #555;
+        flex-shrink: 0;
     }
 
     .cmd-row input {
@@ -80,11 +89,20 @@
 <button onclick="copyToClipboard()">Copy to Clipboard</button>
 
 <script>
+function renumberCommands() {
+    document.querySelectorAll('.cmd-number').forEach((el, idx) => {
+        el.textContent = idx + 1;
+    });
+}
+
 function addCommand(value = '') {
     const container = document.getElementById('cmdContainer');
 
     const row = document.createElement('div');
     row.className = 'cmd-row';
+
+    const number = document.createElement('div');
+    number.className = 'cmd-number';
 
     const input = document.createElement('input');
     input.type = 'text';
@@ -95,11 +113,21 @@ function addCommand(value = '') {
     const removeBtn = document.createElement('button');
     removeBtn.textContent = '✖';
     removeBtn.className = 'remove-btn';
-    removeBtn.onclick = () => row.remove();
+    removeBtn.onclick = () => {
+        row.remove();
+        renumberCommands();
+    };
 
+    row.appendChild(number);
     row.appendChild(input);
     row.appendChild(removeBtn);
     container.appendChild(row);
+
+    renumberCommands();
+
+    // 👇 Auto-scroll to the newly added command
+    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    input.focus();
 }
 
 // Add one command box by default
@@ -146,7 +174,11 @@ function generateScript() {
 
     command += ` && sudo rm -rf "${basePath}" && exit`;
 
-    document.getElementById('generatedCommand').value = command;
+    const output = document.getElementById('generatedCommand');
+    output.value = command;
+
+    // 👇 Auto-scroll to the generated output
+    output.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function copyToClipboard() {
