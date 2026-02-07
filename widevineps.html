@@ -62,7 +62,7 @@
     }
 
     #generatedCommand {
-        height: 220px;
+        height: 240px;
         font-family: Consolas, monospace;
     }
 </style>
@@ -153,11 +153,12 @@ function generateScript() {
         .map(i => i.value.trim())
         .filter(Boolean);
 
-    const basePath = `D:\\Torrents\\xfer\\TV\\${showName}\\Season ${seasonNumber}`;
+    const seasonPath = `D:\\Torrents\\xfer\\TV\\${showName}\\Season ${seasonNumber}`;
+    const showPath = `D:\\Torrents\\xfer\\TV\\${showName}`;
 
     let script = '';
-    script += `New-Item -ItemType Directory -Force -Path "${basePath}"; `;
-    script += `Set-Location "${basePath}"`;
+    script += `New-Item -ItemType Directory -Force -Path "${seasonPath}"; `;
+    script += `Set-Location "${seasonPath}"`;
 
     if (cmds.length) {
         script += '; ' + cmds.join('; ');
@@ -173,9 +174,11 @@ function generateScript() {
     script += `$i++ `;
     script += `}; `;
 
-    script += `rclone copy "${basePath}" "tgcrypt:TV/${showName}/Season ${seasonNumber}" --progress --transfers 30 --disable-http2; `;
-    script += `Set-Location (Split-Path "${basePath}" -Parent); `;
-    script += `Remove-Item -Recurse -Force "${basePath}"; `;
+    script += `rclone copy "${seasonPath}" "tgcrypt:TV/${showName}/Season ${seasonNumber}" --progress --transfers 10 --disable-http2; `;
+    script += `Set-Location "${showPath}"; `;
+    script += `Remove-Item -Recurse -Force "${seasonPath}"; `;
+    script += `if (-not (Get-ChildItem -Path "${showPath}" -Recurse -Force -ErrorAction SilentlyContinue)) { `;
+    script += `Remove-Item -Force "${showPath}" }; `;
     script += `Clear-Host; exit`;
 
     const output = document.getElementById('generatedCommand');
