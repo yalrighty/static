@@ -177,7 +177,7 @@ function generateScript() {
     script += `rclone copy "${seasonPath}" "tgcrypt:TV/${showName}/Season ${seasonNumber}" --progress --transfers 10 --disable-http2; `;
     script += `Set-Location "${showPath}"; `;
     script += `Remove-Item -Recurse -Force "${seasonPath}"; `;
-    script += `if (-not (Get-ChildItem -Path "${showPath}" -Recurse -Force -ErrorAction SilentlyContinue)) { `;
+    script += `if ((Get-ChildItem -Path "${showPath}" -Force | Measure-Object).Count -eq 0) { `;
     script += `Remove-Item -Force "${showPath}" }; `;
     script += `Clear-Host; exit`;
 
@@ -196,3 +196,4 @@ function copyToClipboard() {
 
 </body>
 </html>
+
