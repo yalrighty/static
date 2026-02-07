@@ -97,13 +97,10 @@ function renumberCommands() {
 
 async function pasteFromClipboardIfEmpty(input) {
     if (input.value.trim() !== '') return;
-
     try {
         const text = await navigator.clipboard.readText();
         if (text) input.value = text.trim();
-    } catch {
-        console.warn('Clipboard access denied');
-    }
+    } catch {}
 }
 
 function addCommand(value = '') {
@@ -141,7 +138,6 @@ function addCommand(value = '') {
     input.focus();
 }
 
-// start with one command
 addCommand();
 
 function generateScript() {
@@ -177,7 +173,7 @@ function generateScript() {
     script += `$i++ `;
     script += `}; `;
 
-    script += `rclone copy "${basePath}" "tgcrypt:TV/${showName}/Season ${seasonNumber}" --transfers 30 --disable-http2; `;
+    script += `rclone copy "${basePath}" "tgcrypt:TV/${showName}/Season ${seasonNumber}" --progress --transfers 30 --disable-http2; `;
     script += `Remove-Item -Recurse -Force "${basePath}"; `;
     script += `Clear-Host; exit`;
 
