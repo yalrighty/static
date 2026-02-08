@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TV Script Generator</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #f5f5f5;
+    margin: 20px;
+}
+
+h2, h3 {
+    margin-top: 20px;
+}
+
+input, textarea, button, label {
+    font-size: 16px;
+    padding: 8px;
+    margin: 5px 0;
+    box-sizing: border-box;
+}
+
+input, textarea {
+    width: 100%;
+}
+
+button {
+    cursor: pointer;
+}
+
+.toggle {
+    display: flex;
+    gap: 20px;
+    margin: 10px 0;
+}
+
+.cmd-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: center;
+}
+
+.cmd-number {
+    width: 32px;
+    text-align: right;
+    font-weight: bold;
+    color: #555;
+    flex-shrink: 0;
+}
+
+.cmd-row input {
+    flex: 1;
+}
+
+.remove-btn {
+    background: #d9534f;
+    color: white;
+    border: none;
+    padding: 0 12px;
+}
+
+.remove-btn:hover {
+    background: #c9302c;
+}
+
+#generatedCommand {
+    height: 300px;
+    font-family: Consolas, monospace;
+}
+</style>
+</head>
+<body>
+
+<h2>TV Script Generator</h2>
+
+<div class="toggle">
+    <label>
+        <input type="radio" name="shell" value="powershell" checked>
+        PowerShell (Windows)
+    </label>
+    <label>
+        <input type="radio" name="shell" value="bash">
+        Bash (Linux)
+    </label>
+</div>
+
+<label>Show Name:</label>
+<input type="text" id="showName">
+
+<label>Season Number:</label>
+<input type="number" id="seasonNumber" min="1">
+
+<h3>Commands</h3>
+<div id="cmdContainer"></div>
+
+<button onclick="addCommand()">Add Command</button>
+<button onclick="generateScript()">Generate Script</button>
+
+<h3>Generated Script</h3>
+<textarea id="generatedCommand" readonly></textarea><br>
+
+<button onclick="copyToClipboard()">Copy to Clipboard</button>
+<button onclick="nextSeason()">Next Season ▶</button>
+
+<script>
+function shell() {
+    return document.querySelector('input[name="shell"]:checked').value;
+}
+
+function renumberCommands() {
+    document.querySelectorAll('.cmd-number').forEach((el, i) => el.textContent = i + 1);
+}
+
+async function pasteFromClipboardIfEmpty(input) {
+    if (input.value) return;
+    try {
+        input.value = (await navigator.clipboard.readText()).trim();
+    } catch {}
+}
+
+function addCommand(value = '') {
+    const row = document.createElement('div');
+    row.className = 'cmd-row';
+
+    const num = document.createElement('div');
+    num.className = 'cmd-number';
+
+    const input = document.createElement('input');
+    input.className = 'cmdInput';
+    input.placeholder = 'Click to paste from clipboard';
+    input.value = value;
+    input.onclick = () => pasteFromClipboardIfEmpty(input);
+
+    const del = document.createElement('button');
+    del.textContent = '✖';
+    del.className = 'remove-btn';
+    del.onclick = () => { row.remove(); renumberCommands(); };
+
+    row.append(num, input, del);
+    cmdContainer.appendChild(row);
+    renumberCommands();
+    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+addCommand();
+
+function generateScript() {
+    const show = showName.value.trim();
+    const season = seasonNumber.value.trim();
+    if (!show || !season) return alert('Missing fields');
+
+    const cmds = [...document.querySelectorAll('.cmdInput')]
+        .map(i => i.value.trim()).filter(Boolean);
+
+    let s = '';
+    if (shell() === 'powershell') {
+        const seasonPath = `D:\\Torrents\\xfer\\TV\\${show}\\Season ${season}`;
+        const showPath = `D:\\Torrents\\xfer\\TV\\${show}`;
+
+        s += `New-Item -ItemType Directory -Force -Path "${seasonPath}"; `;
+        s += `Set-Location "${seasonPath}"`;
+        if (cmds.length) s += '; ' + cmds.join('; ');
+        s += `; $season='{0:D2}' -f [int]("${season}"); $i=1; `;
+        s += `Get-ChildItem -File | Sort Name | % { Rename-Item $_ ('S'+$season+'E'+('{0:D2}'-f $i)+$_.Extension); $i++ }; `;
+        s += `rclone copy "${seasonPath}" "tgcrypt:TV/${show}/Season ${season}" --progress --transfers 10 --disable-http2; `;
+        s += `Set-Location "${showPath}"; Remove-Item -Recurse -Force "${seasonPath}"; `;
+        s += `if (-not (Get-ChildItem "${showPath}" -Recurse -Force)) { Remove-Item -Force "${showPath}" }; exit`;
+    } else {
+        const seasonPath = `/media/transmission/downloads/TV/${show}/Season ${season}`;
+        s += `mkdir -p "${seasonPath}" && cd "${seasonPath}"`;
+        if (cmds.length) s += ' && ' + cmds.join(' && ');
+        s += ` && season=$(printf "%02d" ${season}) && i=1 && `;
+        s += `for f in *.*; do ext="\${f##*.}"; printf -v e "%02d" $i; mv "$f" "S$season"E$e".$ext"; ((i++)); done`;
+        s += ` && rclone copy "${seasonPath}" "tgcrypt:TV/${show}/Season ${season}" --progress --transfers 30 --disable-http2`;
+        s += ` && cd .. && rmdir "Season ${season}" 2>/dev/null && cd .. && rmdir "${show}" 2>/dev/null`;
+    }
+
+    generatedCommand.value = s;
+    generatedCommand.scrollIntoView({ behavior: 'smooth' });
+}
+
+function copyToClipboard() {
+    generatedCommand.select();
+    document.execCommand('copy');
+}
+
+function nextSeason() {
+    seasonNumber.value = (parseInt(seasonNumber.value || 0) + 1);
+    cmdContainer.innerHTML = '';
+    addCommand();
+    generatedCommand.value = '';
+}
+</script>
+
+</body>
+</html>
