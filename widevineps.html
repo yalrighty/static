@@ -6,65 +6,65 @@
 <title>PowerShell Script Generator</title>
 
 <style>
-    body {
-        font-family: Arial, sans-serif;
-        background: #f5f5f5;
-        margin: 20px;
-    }
+body {
+    font-family: Arial, sans-serif;
+    background: #f5f5f5;
+    margin: 20px;
+}
 
-    h2, h3 {
-        margin-top: 20px;
-    }
+h2, h3 {
+    margin-top: 20px;
+}
 
-    input, textarea, button {
-        font-size: 16px;
-        padding: 8px;
-        margin: 5px 0;
-        box-sizing: border-box;
-    }
+input, textarea, button {
+    font-size: 16px;
+    padding: 8px;
+    margin: 5px 0;
+    box-sizing: border-box;
+}
 
-    input, textarea {
-        width: 100%;
-    }
+input, textarea {
+    width: 100%;
+}
 
-    button {
-        cursor: pointer;
-    }
+button {
+    cursor: pointer;
+}
 
-    .cmd-row {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 8px;
-        align-items: center;
-    }
+.cmd-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: center;
+}
 
-    .cmd-number {
-        width: 32px;
-        text-align: right;
-        font-weight: bold;
-        color: #555;
-        flex-shrink: 0;
-    }
+.cmd-number {
+    width: 32px;
+    text-align: right;
+    font-weight: bold;
+    color: #555;
+    flex-shrink: 0;
+}
 
-    .cmd-row input {
-        flex: 1;
-    }
+.cmd-row input {
+    flex: 1;
+}
 
-    .remove-btn {
-        background: #d9534f;
-        color: white;
-        border: none;
-        padding: 0 12px;
-    }
+.remove-btn {
+    background: #d9534f;
+    color: white;
+    border: none;
+    padding: 0 12px;
+}
 
-    .remove-btn:hover {
-        background: #c9302c;
-    }
+.remove-btn:hover {
+    background: #c9302c;
+}
 
-    #generatedCommand {
-        height: 240px;
-        font-family: Consolas, monospace;
-    }
+#generatedCommand {
+    height: 260px;
+    font-family: Consolas, monospace;
+}
 </style>
 </head>
 <body>
@@ -86,7 +86,9 @@
 
 <h3>Generated PowerShell Script</h3>
 <textarea id="generatedCommand" readonly></textarea><br>
+
 <button onclick="copyToClipboard()">Copy to Clipboard</button>
+<button onclick="nextSeason()">Next Season ▶</button>
 
 <script>
 function renumberCommands() {
@@ -164,7 +166,7 @@ function generateScript() {
         script += '; ' + cmds.join('; ');
     }
 
-    script += `; $season = (Get-Item .).Name -replace '\\D',''; `;
+    script += `; $season = (Get-Item .).Name -replace '\\\\D',''; `;
     script += `$season = '{0:D2}' -f [int]$season; `;
     script += `$i = 1; `;
     script += `Get-ChildItem -File | Sort-Object Name | ForEach-Object { `;
@@ -177,7 +179,7 @@ function generateScript() {
     script += `rclone copy "${seasonPath}" "tgcrypt:TV/${showName}/Season ${seasonNumber}" --progress --transfers 10 --disable-http2; `;
     script += `Set-Location "${showPath}"; `;
     script += `Remove-Item -Recurse -Force "${seasonPath}"; `;
-    script += `if ((Get-ChildItem -Path "${showPath}" -Force | Measure-Object).Count -eq 0) { `;
+    script += `if (-not (Get-ChildItem -Path "${showPath}" -Recurse -Force -ErrorAction SilentlyContinue)) { `;
     script += `Remove-Item -Force "${showPath}" }; `;
     script += `Clear-Host; exit`;
 
@@ -192,8 +194,21 @@ function copyToClipboard() {
     document.execCommand('copy');
     alert('Command copied to clipboard!');
 }
+
+function nextSeason() {
+    const seasonInput = document.getElementById('seasonNumber');
+    const current = parseInt(seasonInput.value, 10);
+    if (!isNaN(current)) {
+        seasonInput.value = current + 1;
+    }
+
+    const container = document.getElementById('cmdContainer');
+    container.innerHTML = '';
+    addCommand();
+
+    document.getElementById('generatedCommand').value = '';
+}
 </script>
 
 </body>
 </html>
-
