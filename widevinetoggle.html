@@ -68,7 +68,7 @@ button {
 }
 
 #generatedCommand {
-    height: 300px;
+    height: 320px;
     font-family: Consolas, monospace;
 }
 </style>
@@ -89,10 +89,10 @@ button {
 </div>
 
 <label>Show Name:</label>
-<input type="text" id="showName">
+<input type="text" id="showName" placeholder="e.g. The Expanse">
 
 <label>Season Number:</label>
-<input type="number" id="seasonNumber" min="1">
+<input type="number" id="seasonNumber" min="1" placeholder="e.g. 1">
 
 <h3>Commands</h3>
 <div id="cmdContainer"></div>
@@ -138,7 +138,10 @@ function addCommand(value = '') {
     const del = document.createElement('button');
     del.textContent = '✖';
     del.className = 'remove-btn';
-    del.onclick = () => { row.remove(); renumberCommands(); };
+    del.onclick = () => {
+        row.remove();
+        renumberCommands();
+    };
 
     row.append(num, input, del);
     cmdContainer.appendChild(row);
@@ -151,12 +154,17 @@ addCommand();
 function generateScript() {
     const show = showName.value.trim();
     const season = seasonNumber.value.trim();
-    if (!show || !season) return alert('Missing fields');
+    if (!show || !season) {
+        alert('Please enter Show Name and Season Number');
+        return;
+    }
 
     const cmds = [...document.querySelectorAll('.cmdInput')]
-        .map(i => i.value.trim()).filter(Boolean);
+        .map(i => i.value.trim())
+        .filter(Boolean);
 
     let s = '';
+
     if (shell() === 'powershell') {
         const seasonPath = `D:\\Torrents\\xfer\\TV\\${show}\\Season ${season}`;
         const showPath = `D:\\Torrents\\xfer\\TV\\${show}`;
@@ -171,12 +179,13 @@ function generateScript() {
         s += `if (-not (Get-ChildItem "${showPath}" -Recurse -Force)) { Remove-Item -Force "${showPath}" }; exit`;
     } else {
         const seasonPath = `/media/transmission/downloads/TV/${show}/Season ${season}`;
+
         s += `mkdir -p "${seasonPath}" && cd "${seasonPath}"`;
         if (cmds.length) s += ' && ' + cmds.join(' && ');
         s += ` && season=$(printf "%02d" ${season}) && i=1 && `;
         s += `for f in *.*; do ext="\${f##*.}"; printf -v e "%02d" $i; mv "$f" "S$season"E$e".$ext"; ((i++)); done`;
         s += ` && rclone copy "${seasonPath}" "tgcrypt:TV/${show}/Season ${season}" --progress --transfers 30 --disable-http2`;
-        s += ` && cd .. && rmdir "Season ${season}" 2>/dev/null && cd .. && rmdir "${show}" 2>/dev/null`;
+        s += ` && rm -rf "${seasonPath}" && exit`;
     }
 
     generatedCommand.value = s;
